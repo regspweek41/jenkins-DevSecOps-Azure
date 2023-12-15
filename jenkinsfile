@@ -8,9 +8,9 @@ pipeline {
     environment{
         SCANNER_HOME= tool 'sonar-scanner'
         AZURE_SUBSCRIPTION_ID='491e1121-c626-46e3-98ba-98f9f0434964'
-        AZURE_CLIENT_SECRET='S6p8Q~R3ZtNjJZg1K_-huifAVgZU-ff9Av7W~bL8'
-        AZURE_CLIENT_ID='b7d9f0a4-47f9-4403-a979-60f47294aa9b'
-        AZURE_TENANT_ID='2047b1bd-994d-4366-9d87-647dac583343'
+        AZURE_CLIENT_SECRET='S6p8Q~R3ZtNjJZg1K_-huifAVgZU*******'
+        AZURE_CLIENT_ID='b7d9f0a4-47f9-4403-a979-6*****'
+        AZURE_TENANT_ID='2047b1bd-994d-4366-9d87-64z*****'
         CONTAINER_REGISTRY='project231.azurecr.io'
         RESOURCE_GROUP='AZ-NEW-22'
         REPO="services"
