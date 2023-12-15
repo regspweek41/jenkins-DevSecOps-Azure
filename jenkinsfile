@@ -1,0 +1,75 @@
+stages {
+        stage('Git Checkout') {
+            steps {
+                git branch: 'main', credentialsId: 'azure-repo-id', url: 'https://rkrvritN45PSP@dev.azure.com/rkrvritN45PSP/RVRIT/_git/Mainproject-Repo'
+                
+            }
+        }
+        
+        stage('Install GitLeaks') {
+            steps {
+                // Install GitLeaks
+                sh 'curl -sL https://github.com/zricethezav/gitleaks/releases/download/v7.1.2/gitleaks-linux-amd64 -o gitleaks'
+                sh 'chmod +x gitleaks'
+            }
+        }
+
+        stage('Run GitLeaks') {
+            steps {
+                // Run GitLeaks
+                sh './gitleaks --repo-path ./Mainproject-Repo'
+            }
+        }
+        
+        stage('COMPILE') {
+            steps {
+                sh "mvn clean compile -DskipTests=true"
+            }
+        }
+        
+        stage('OWASP Scan') {
+            steps {
+                dependencyCheck additionalArguments: '--scan ./ ', odcInstallation: 'owasp'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
+        
+        
+        stage('Sonarqube') {
+            steps {
+                withSonarQubeEnv('sonar-server'){
+                  sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Mainproject-Repo \
+                  -Dsonar.java.binaries=. \
+                  -Dsonar.projectKey=Mainproject-Repo '''
+              }
+            }
+        }
+        
+        
+        
+        stage('Build') {
+            steps {
+                sh "mvn clean package -DskipTests=true"
+            }
+        }
+        
+       
+        stage('Docker Build & Push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'myAzureCredential', passwordVariable: 'AZURE_CLIENT_SECRET', usernameVariable: 'AZURE_CLIENT_ID')]) {
+                            sh 'az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET -t $AZURE_TENANT_ID'
+                            sh 'az account set -s $AZURE_SUBSCRIPTION_ID'
+                            sh 'az acr login --name $CONTAINER_REGISTRY --resource-group $RESOURCE_GROUP'
+                            sh 'docker build -t service-backend .'
+                            sh "docker tag  service-backend $CONTAINER_REGISTRY/$REPO/$IMAGE_NAME:$TAG"
+                            sh "docker push $CONTAINER_REGISTRY/$REPO/$IMAGE_NAME:$TAG"
+                }
+            }
+        }
+        
+        stage("TRIVY"){
+            steps{
+                sh " trivy --format json --output ${TRIVY_REPORT_FILE} image $CONTAINER_REGISTRY/$REPO/$IMAGE_NAME:$TAG"
+            }
+        }
+        
